@@ -4,14 +4,13 @@ import os
 import pandas as pd
 import json
 import fitz # PyMuPDF
-from openai import OpenAI
+# from openai import OpenAI
 import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path 
 import base64
 import re
-# import ollama
-import requests
+import ollama
 # # Initialize the tool
 # file_writer_tool = FileWriterTool()
 
@@ -21,24 +20,47 @@ import requests
         
 # This function will extract the raw text from a PDF
 # openai.api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+# client = OpenAI(
+#     # This is the default and can be omitted
+#     api_key=os.environ.get("OPENAI_API_KEY"),
+# )
 
-# client = ollama.Client(host='http://localhost:11434') 
+client = ollama.Client(host='http://localhost:11434') 
 
 def extract_text(image_path):
     img = Image.open(image_path)
     return pytesseract.image_to_string(img)
+
+# def gpt_to_json(text):
+#     prompt = f"""
+#     You are an intelligent document parser.
+
+#     Extract structured information from the following OCR text and format it as JSON. Include fields and tables if present.
+
+#     OCR Text:
+#     {text}
+#     """
+
+#     response = openai.ChatCompletion.create(
+#         model="gpt-4",
+#         messages=[
+#             {"role": "system", "content": "You convert OCR text to structured JSON."},
+#             {"role": "user", "content": prompt}
+#         ]
+#     )
+
+#     return response.choices[0].message.content
+def encode_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
 
 def get_text_gpt(imagepath):
     prompt = "What is in this image?"
     base64_image = encode_image(imagepath)
 
     response = client.responses.create(
-        model="gpt-4o-mini",
-        # model="llama3.2-vision",
+        # model="gpt-4o-mini",
+        model="llama3.2-vision",
         input=[
             {
                 "role": "user",
@@ -50,41 +72,28 @@ def get_text_gpt(imagepath):
         ],
     )
 
+    # base64_image = encode_image(imagepath)
+
+    # # Send image to GPT-4 Vision model
+    # response = openai.ChatCompletion.create(
+    #     model="gpt-4-vision-preview",
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": [
+    #                 {"type": "text", "text": "Extract and return formatted text from this image"},
+    #                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+    #             ],
+    #         }
+    #     ],
+    #     max_tokens=1000
+    # )
     return response.output_text 
+# # Example usage
+# ocr_text = extract_text("page_1.png")
+# json_output = gpt_to_json(ocr_text)
 
-def encode_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode('utf-8')
-
-# below is for ollama
-# def get_text_gpt_ollama(imagepath):
-#     prompt = "What is in this image?"
-#     base64_image = encode_image(imagepath)
-
-#     payload = {
-#         "model": "llama3.2-vision",
-#         "stream": False,
-#         "messages": [
-#             {
-#                 "role": "user",
-#                 "content": (
-#                     "Extract all text from the image and return it as markdown.\n"
-#                     "Do not describe the image or add extra text.\n"
-#                     "Only return the text found in the image."
-#                 ),
-#                 "images": [base64_image]
-#             }
-#         ]
-#     }
-    
-#     response = requests.post(
-#         "http://localhost:11434/api/chat",
-#         json=payload,
-#         headers={"Content-Type": "application/json"}
-#     )
-    
-#     return response.json().get('message', {}).get('content', 'No text extracted')
-
+# print(json_output)
 def extract_text_from_pdf_img(pdf_path,pdfname, output_folder="temppdfpages", dpi=300, fmt="png"):
     os.makedirs(output_folder+"\\"+pdfname, exist_ok=True)
     print(f"Converting '{pdf_path}' to images...")
@@ -140,8 +149,8 @@ def getFormattedTextfromJSON(jsonfilename):
 
     # Step 4: Send to GPT
     response = client.responses.create(
-        model="gpt-4o-mini",
-        # model="ollama/llama3",
+        # model="gpt-4o-mini",
+        model="ollama/llama3",
         input=prompt,
         temperature=0
     )

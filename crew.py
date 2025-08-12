@@ -1,8 +1,8 @@
 from crewai import Crew,Process
 from agents import initInvoiceAgent,invoice_Amount_Validation_Agent
 from tasks import readLogfile_task,amountValidateTask,updatefileDetails_task
-from crewai import LLM
-# from llm_config import ollama_llm
+# from crewai import LLM
+from llm_config import ollama_llm
 import os
 # crew = Crew(
 #   agents=[invoice_Amount_Validation_Agent],
@@ -15,19 +15,18 @@ import os
 #   # max_iter=50,
 #   max_retry_limit=5
 
-# )ollama/llama3
-# os.environ["OPENAI_API_KEY"] = "sk-proj-1111" #dummy key should be  for ollama 
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+# )
+os.environ["OPENAI_API_KEY"] = "sk-proj-1111" #dummy key should be  for ollama 
 crew = Crew(
   agents=[initInvoiceAgent,invoice_Amount_Validation_Agent],
-  tasks=[readLogfile_task,updatefileDetails_task,amountValidateTask]
-  # memory=True,
-  # cache=True,
+  tasks=[readLogfile_task,updatefileDetails_task,amountValidateTask],
+  memory=True,
+  cache=True,
   # max_rpm=100,
   # share_crew=True,
-  # max_iter=40,
+  max_iter=40,
   # max_iter=50,
-  # max_retry_limit=5
+  max_retry_limit=5
 
 )
 
