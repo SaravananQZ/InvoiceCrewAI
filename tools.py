@@ -1,5 +1,5 @@
 from crewai.tools import BaseTool
-from crewai_tools.tools import PDFSearchTool
+# from crewai_tools.tools import PDFSearchTool
 import os
 import pandas as pd
 import json
@@ -11,6 +11,7 @@ from pdf2image import convert_from_path
 import base64
 import re
 import ollama
+import requests
 # # Initialize the tool
 # file_writer_tool = FileWriterTool()
 
@@ -57,43 +58,30 @@ def encode_image(image_path):
 def get_text_gpt(imagepath):
     prompt = "What is in this image?"
     base64_image = encode_image(imagepath)
-
-    response = client.responses.create(
-        # model="gpt-4o-mini",
-        model="llama3.2-vision",
-        input=[
+ 
+    payload = {
+        "model": "llama3.2-vision",
+        "stream": False,
+        "messages": [
             {
                 "role": "user",
-                "content": [
-                    {"type": "input_text", "text": "Extract and return formatted text from this image"},
-                    {"type": "input_image", "image_url": f"data:image/png;base64,{base64_image}"},
-                ],
+                "content": (
+                    "Extract all text from the image and return it as markdown.\n"
+                    "Do not describe the image or add extra text.\n"
+                    "Only return the text found in the image."
+                ),
+                "images": [base64_image]
             }
-        ],
+        ]
+    }
+   
+    response = requests.post(
+        "http://localhost:11434/api/chat",
+        json=payload,
+        headers={"Content-Type": "application/json"}
     )
-
-    # base64_image = encode_image(imagepath)
-
-    # # Send image to GPT-4 Vision model
-    # response = openai.ChatCompletion.create(
-    #     model="gpt-4-vision-preview",
-    #     messages=[
-    #         {
-    #             "role": "user",
-    #             "content": [
-    #                 {"type": "text", "text": "Extract and return formatted text from this image"},
-    #                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-    #             ],
-    #         }
-    #     ],
-    #     max_tokens=1000
-    # )
-    return response.output_text 
-# # Example usage
-# ocr_text = extract_text("page_1.png")
-# json_output = gpt_to_json(ocr_text)
-
-# print(json_output)
+   
+    return response.json().get('message', {}).get('content', 'No text extracted')
 def extract_text_from_pdf_img(pdf_path,pdfname, output_folder="temppdfpages", dpi=300, fmt="png"):
     os.makedirs(output_folder+"\\"+pdfname, exist_ok=True)
     print(f"Converting '{pdf_path}' to images...")

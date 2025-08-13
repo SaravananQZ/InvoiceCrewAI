@@ -1,6 +1,6 @@
 from crewai import Task
 from tools import LogFileReader,ConvertPDFJSON,ReadExcelColumn,UpdateLineItemsValues,returnSpecificJSONvalues,UpdateVendorName,ReadVendorName,ConvertAmount
-from agents import initInvoiceAgent,invoice_Amount_Validation_Agent,invoice_Vendor_Validation_Agent
+from agents import initInvoiceAgent,invoice_Amount_Validation_Agent
 
 
 readLogfile_task =Task(
@@ -32,7 +32,7 @@ amountValidateTask=Task(
         Steps:
         1. Read Excel:
             1- Open 'InvoiceLog.xlsx' and get the list of filenames from the Filename column.
-            2. For each file name Read its JSON file from dataoutput folder by passing json filename.
+            2. For each file name Read its JSON file from dataoutput folder using returnSpecificJSON tool.
             3. After that do the following operation and update back to 'InvoiceLog.xlsx'.
                 Calculate Item Count & Total Amount:
                     - Get number of line Item Count and Total Amount from JSON.
@@ -87,8 +87,8 @@ vendorValidateTask=Task(
         """
     )
     ,
-    agent=invoice_Vendor_Validation_Agent,
-    tools=[returnSpecificJSONvalues(),ReadVendorName(),UpdateVendorName()],
+    agent=invoice_Amount_Validation_Agent,
+    tools=[returnSpecificJSONvalues(),ConvertAmount(),UpdateLineItemsValues()],
     expected_output="""
         "Updated Excel file and printed detailed To summary for each processed file."
     """
